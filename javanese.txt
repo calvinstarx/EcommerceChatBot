@@ -1,0 +1,15 @@
+from twilio.rest import Client 
+ 
+account_sid = 'AC49a77dea151953c47edd05472a015d16' 
+auth_token = '[Redacted]' 
+client = Client(account_sid, auth_token) 
+ 
+message = client.messages.create( 
+                              from_='whatsapp:+14155238886',  
+                              body='Product name:rolex yatch master\n Price:$20,000 \n Gst:46% \n Disclaimer:handle it with care as the product is fragile \n Product will be delivered within 10 days of delivery \n
+                                    link:https://www.rolex.com/watches/yacht-master.html?ef_id=Cj0KCQjw4omaBhDqARIsADXULuUp0hPAQYFoKxkftdE2cFP-PoeQz6dP2BDQML-hiOn5h45XscE-wvsaAsLLEALw_wcB:G:s&s_kwcid=AL!141!3!519473872268!e!!g!!rolex%20yacht%20master',      
+                              to='whatsapp:+918939200603' 
+                  
+                             )
+ 
+print(message.sid)
