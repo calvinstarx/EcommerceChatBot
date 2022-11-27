@@ -1,0 +1,146 @@
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from twilio.twiml.messaging_response import MessagingResponse
+from datetime import datetime
+import math
+import emoji
+import time
+import re
+import ccxt
+import requests
+import cryptocompare
+from forex_python.bitcoin import BtcConverter
+from forex_python.bitcoin import currencyRates
+from forex_python.bitcoin import currencyCodes
+import apikey
+bitmex=ccxt.bitmex()
+bittrex=ccxt.bittrex()
+karken=ccxt.karken()
+bitmex_price=f"Bitmex for $ {bitmex.fetch_ticker('BTC/USD')['close']}"
+bittrex_price=f"Bitmex for $ {bittrex.fetch_ticker('BTC/USD')['close']}"
+karken_price=f"Bitmex for $ {karken.fetch_ticker('BTC/USD')['close']}"
+all_prices_loop=[bitmex_price, bittrex_price, karken_price]
+
+def hilow():
+    highest_price=max(all_prices_loop)
+    lowest_price=min(all_prices_loop)
+    arbitrage_high=highest_price.split()[3]
+    arbitrage_low=lowest_price.split()[3]
+    arbitrage=float(arbitrage_high)-float(arbitrage_low)
+    return f"buy on {lowest_price} and sell on {highest_price}.your arbitrage gain is ${round(arbitrage, 2)}"
+    
+def rates():
+    current_price = requests.get('https://api.coindesk.com/v1/bpi/currentprice.json')
+    json_data = current_price.json()
+    return f"Bitcoin to top global currencies \n" \
+            f"\n" \
+           f"USD - ${str(json_data['bpi']['USD']['rate_float'])} \n" \
+            f"EUR - E{str(json_data['bpi']['EUR']['rate_float'])} \n" \
+             f"GBP - G{str(json_data['bpi']['GBP']['rate_float'])} \n" 
+
+def check_usd_bitcoin_value(amount):
+    validate=requests.get('https://blockchain.info/tobtc?currency=USD&value={amount}')
+    data = validate.json()
+    return data
+
+
+
+
+
+
+
+@csrf_exempt
+def index(request):
+    if request.method =='POST':
+        incoming_msg = request.apost['Body'].lower()
+        message = incoming_msg.split()
+        resp = MessagingResponse()
+        msg = resp.message()
+        respond = False
+
+        if 'hi' in incoming_msg:
+            reply = emoji.emojize("""hello mate,cage here,\nI'm here to guide you through the entire process of purchasing and selling bitcoins.Select a number like 1 or type a word like bitcoin.\n*1:*check the arbitrage algorithem signal.\n*2:*check the USD,EUR and GBP to bitcoin price.\n*convert:*convert usd to bit coin.\n*check date:*check the date.\n*get address:*get the address of bitcoin.\n*live update: get the live update./n*buy:buy the product\n""", use_aliases = True)
+            msg.body(reply)
+            responded = True
+
+        elif incoming_msg == '1':
+            reply = hilow()
+            msg.body(str(reply))
+            responded = True
+
+        elif incoming_msg == '2':
+            reply = rates()
+            msg.body(str(reply))
+            responded = True     
+
+        elif 'latest' in incoming_msg:
+            currency = incoming_msg.split()[4].upper()
+            amount = float(re.search(r'\d+', incoming_msg).group(0))
+            symbols = currencyCodes()
+            latest_price = BtcConverter()
+            reply = latest_price.convert_btc_to_cur(amount,currency)  
+            msg.body(f"the latest price of B{amount} to {currency} is {symbols.get_symbol(currency)}{round(reply, 2)}")
+        
+        elif 'check date' in incoming_msg:
+            match_date = re.search(r'\d{2}.\d{2}.\d{4}',incoming_msg)
+            date = datetime.strptime(match_date.group(), '%d.%m.%y').date()
+            currency = incoming_msg[:3].upper()
+            symbols = currencyCodes()
+            bit_amount = amount = float(re.search(r'\d+', incoming_msg).group(0))
+            past_date = BtcConverter
+            reply = past_date.convert_btc_to_cur_on(amount,currency,date)
+            msg.body(f"{bit_amount}bitcoin was worth{symbols.get_symbol(currency)}{str(round(reply))} on that date")
+            responded = True
+        
+        
+        elif 'convert' in incoming_msg:
+            amount = int(re.search(r'\d+', incoming_msg).group(0))
+            reply=check_usd_bitcoin_value(amount)
+            msg.body(f"USD{amount} converted to bitcoin is B{str(reply)}")
+            responded = True
+
+        elif 'get address' in incoming_msg:
+            address_request =requests.post('https://api.blockcypher.com/v1/btc/main/addrs/1DEP8i3QJCsomS4BSMY2RpU1upv62aGvhD')
+            address =address_request.json()
+            msg.body(f"bitcoin address:{str(address['address'])} \n"
+                    f"\n"
+                    f"private key:{str(address['private'])}\n"
+                    f"public key:{str(address['public'])}\n"
+                    f"WIF:{str(address['wif'])}\n")
+            responded = True
+      elif 'get address' in incoming_msg:
+            address_request =requests.post('https://api.blockcypher.com/v1/btc/main/addrs/1DEP8i3QJCsomS4BSMY2RpU1upv62aGvhD')
+            address =address_request.json()
+            msg.body(f"bitcoin address:{str(address['address'])} \n"
+                    f"\n"
+                    f"private key:{str(address['private'])}\n"
+                    f"public key:{str(address['public'])}\n"
+                    f"WIF:{str(address['wif'])}\n")
+            responded = True
+        
+        elif 'live update' in incoming_msg:
+            headers = {'X-CMC_PRO_API_KEY':api.key,
+                       'Accepts':'application/json'
+
+            }
+            parms = {
+                'start':'1',
+                'limit':'5',
+                'convert':'USD'
+            }
+
+            url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
+            json = requests.get(url, params = params, headers = headers).json
+            coins = json['data']
+            
+            for x in coins:
+                if x['symbol'] == 'BTC':
+                   x['quote']['USD']['price']
+                   print(x['symbol'], x['quote']['USD']['price'])
+
+	elif 'buy' in incoming_msg:
+	     print("https://sscomputercity.in/cagecrypto/index.html")	
+
+	if not responded:
+		msg.body("say hi for menu!")
+	return HttpResponse(str(resp))	
